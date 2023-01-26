@@ -1,0 +1,38 @@
+#!/usr/bin/python3
+import sys
+import random
+import subprocess
+
+begin=list()
+obj=list()
+tail=list()
+
+#Don't shuffle those, led to crashes, sometimes.
+blacklist = [ "Scrt1.o", "crtn.o", "crti.o", "crt1.o", "crtbeginS.o", "crtbegin.o", "crtbeginT.o", "crtend.o", "crtendS.o", "crtfastmath.o", "crtprec32.o",    "crtprec64.o",   "crtprec80.o", "libasan_preinit.o"]
+
+prog=sys.argv[1]
+combined=sys.argv[2:]
+
+def is_excluded(obj):
+    #TODO: check whether it's an .o in a gcc or lib directory
+    return obj.endswith(tuple(blacklist))
+
+
+if prog.endswith("collect2") or prog.endswith("ld"):
+        for arg in sys.argv[2:]:
+            if (arg.endswith(".o") or arg.endswith(".os.dt") or arg.endswith(".os")) and not is_excluded(arg):
+                obj.append(arg)
+            else:
+                if len(obj) == 0:
+                    begin.append(arg)
+                else:
+                    tail.append(arg)
+
+        random.shuffle(obj)
+        combined=begin
+        combined.extend(obj)
+        combined.extend(tail)
+args=list()
+args.append(prog)
+args.extend(combined)
+exit(subprocess.run(args).returncode)
